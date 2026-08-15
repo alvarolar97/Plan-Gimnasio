@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Plan · Gimnasio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10140F;
+    --surface:#181F17;
+    --surface-2:#212B20;
+    --border:#2B362A;
+    --text:#ECEDE3;
+    --text-dim:#8E9A87;
+    --turf:#5C9A54;
+    --turf-bright:#8FD17F;
+    --amber:#DFA34C;
+    --brick:#C1594A;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding-bottom:48px;
+  }
+  ::selection{background:var(--turf); color:#10140F;}
+
+  .app{max-width:560px; margin:0 auto; padding:18px 16px 8px;}
+
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .brand{
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:22px;
+    letter-spacing:0.04em; text-transform:uppercase; color:var(--text);
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .brand small{
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:400;
+    color:var(--turf-bright); letter-spacing:0.08em;
+  }
+  .icon-btn{
+    background:var(--surface); border:1px solid var(--border); color:var(--text-dim);
+    width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:all .15s ease; flex-shrink:0;
+  }
+  .icon-btn:hover{color:var(--text); border-color:var(--turf);}
+  .icon-btn.active{background:var(--turf); color:#0d130c; border-color:var(--turf);}
+  .icon-btn svg{width:17px; height:17px;}
+
+  /* day tabs */
+  .day-tabs{
+    display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:16px;
+    scrollbar-width:none;
+  }
+  .day-tabs::-webkit-scrollbar{display:none;}
+  .day-tab{
+    flex-shrink:0; position:relative;
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; letter-spacing:.02em;
+    text-transform:uppercase;
+    background:var(--surface); border:1px solid var(--border); color:var(--text-dim);
+    padding:9px 16px; border-radius:999px; cursor:pointer; transition:all .15s ease;
+    white-space:nowrap;
+  }
+  .day-tab.active{background:var(--turf); border-color:var(--turf); color:#0d130c;}
+  .day-tab .dot{
+    position:absolute; top:-3px; right:-3px; width:9px; height:9px; border-radius:50%;
+    background:var(--amber); border:2px solid var(--bg);
+  }
+  .day-tab.add{
+    background:transparent; border:1px dashed var(--border); color:var(--text-dim);
+    width:38px; padding:0; display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+
+  .suggest-line{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim);
+    margin:-8px 0 16px 2px; letter-spacing:.02em;
+  }
+  .suggest-line b{color:var(--amber); font-weight:600;}
+
+  .day-name-row{display:flex; align-items:center; gap:8px; margin-bottom:14px;}
+  .day-name-input{
+    font-family:'Oswald',sans-serif; font-size:15px; font-weight:600; color:var(--text);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+    padding:7px 10px; flex:1;
+  }
+
+  /* empty state */
+  .empty{
+    text-align:center; padding:60px 20px; color:var(--text-dim);
+  }
+  .empty h2{font-family:'Oswald',sans-serif; color:var(--text); font-size:19px; margin-bottom:6px; text-transform:uppercase;}
+  .empty p{font-size:14px; line-height:1.5; margin-bottom:20px;}
+  .btn-primary{
+    font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
+    background:var(--turf); color:#0d130c; border:none; padding:12px 22px; border-radius:10px;
+    cursor:pointer; font-size:14px;
+  }
+
+  /* blocks */
+  .block{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    margin-bottom:14px; overflow:hidden;
+  }
+  .block-head{
+    display:flex; align-items:center; gap:10px; padding:12px 14px;
+    border-bottom:1px solid var(--border); background:var(--surface-2);
+  }
+  .block-num{
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; color:var(--turf-bright);
+    background:rgba(92,154,84,.15); border:1px solid rgba(92,154,84,.35);
+    padding:3px 7px; border-radius:6px; flex-shrink:0;
+  }
+  .block-title{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; letter-spacing:.03em;
+    text-transform:uppercase; color:var(--text); flex:1;
+  }
+  .block-title-input{
+    font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; text-transform:uppercase;
+    background:transparent; border:1px dashed var(--border); border-radius:6px; color:var(--text);
+    padding:4px 6px; flex:1; letter-spacing:.03em;
+  }
+  .block-del{
+    background:none; border:none; color:var(--text-dim); cursor:pointer; padding:2px;
+    display:flex; align-items:center;
+  }
+  .block-del:hover{color:var(--brick);}
+  .block-del svg{width:15px; height:15px;}
+
+  .exercises{padding:4px 14px 10px;}
+  .exercise{padding:11px 0; border-bottom:1px solid var(--border);}
+  .exercise:last-child{border-bottom:none;}
+
+  .ex-name-row{display:flex; align-items:center; gap:8px; margin-bottom:7px;}
+  .ex-name{font-size:14.5px; font-weight:500; color:var(--text); flex:1;}
+  .ex-name-input{
+    font-size:14.5px; font-weight:500; color:var(--text); background:var(--surface-2);
+    border:1px solid var(--border); border-radius:7px; padding:6px 8px; flex:1;
+  }
+  .ex-del{background:none; border:none; color:var(--text-dim); cursor:pointer; display:flex;}
+  .ex-del:hover{color:var(--brick);}
+  .ex-del svg{width:14px; height:14px;}
+
+  .ex-specs{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:9px;}
+  .spec{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--text-dim);}
+  .spec b{color:var(--text); font-weight:700;}
+  .spec.rir b{color:var(--amber);}
+  .spec.pct b{color:var(--turf-bright);}
+
+  .ex-edit-fields{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:9px;}
+  .field{display:flex; flex-direction:column; gap:3px;}
+  .field label{font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em;}
+  .field input{
+    font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:6px 8px;
+  }
+  .field.notes{grid-column:1/-1;}
+  .field.notes input{font-family:'Inter',sans-serif;}
+
+  .plates{display:flex; gap:7px; flex-wrap:wrap;}
+  .plate{
+    width:26px; height:26px; border-radius:50%; border:2px solid var(--border);
+    background:var(--surface-2); cursor:pointer; position:relative; transition:all .12s ease;
+    flex-shrink:0;
+  }
+  .plate::after{
+    content:''; position:absolute; top:50%; left:50%; width:7px; height:7px; border-radius:50%;
+    background:var(--bg); transform:translate(-50%,-50%);
+  }
+  .plate.done{background:var(--turf); border-color:var(--turf-bright);}
+  .plate.done::after{background:rgba(13,19,12,.6);}
+  .plate:active{transform:scale(0.9);}
+
+  .add-ex-btn, .add-block-btn{
+    width:100%; background:transparent; border:1px dashed var(--border); color:var(--text-dim);
+    font-family:'Inter',sans-serif; font-size:13px; padding:9px; border-radius:9px; cursor:pointer;
+    margin-top:6px;
+  }
+  .add-ex-btn:hover, .add-block-btn:hover{color:var(--turf-bright); border-color:var(--turf);}
+  .add-block-btn{margin-bottom:16px; padding:12px;}
+
+  .footer-actions{display:flex; gap:10px; margin-top:6px;}
+  .sync-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:16px;}
+  .sync-label{font-family:'Oswald',sans-serif; font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.03em; color:var(--text); margin-bottom:4px;}
+  .sync-hint{font-size:12px; color:var(--text-dim); line-height:1.4; margin-bottom:10px;}
+  .sync-area{
+    width:100%; min-height:64px; resize:vertical; margin:8px 0;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text);
+    background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px;
+  }
+  .sync-divider{font-size:11px; color:var(--text-dim); text-align:center; margin:12px 0 8px;}
+  .btn-secondary{
+    flex:1; font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
+    background:var(--surface); border:1px solid var(--border); color:var(--text);
+    padding:12px; border-radius:10px; cursor:pointer; font-size:13px;
+  }
+  .btn-secondary:hover{border-color:var(--turf);}
+  .btn-secondary.warn:hover{border-color:var(--brick); color:var(--brick);}
+
+  .day-del-row{text-align:center; margin-top:18px;}
+  .link-del{background:none; border:none; color:var(--text-dim); font-size:12.5px; cursor:pointer; text-decoration:underline; text-underline-offset:3px;}
+  .link-del:hover{color:var(--brick);}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--turf); color:#0d130c; font-family:'Oswald',sans-serif; font-weight:600;
+    font-size:13px; text-transform:uppercase; letter-spacing:.03em;
+    padding:10px 18px; border-radius:999px; opacity:0; pointer-events:none; transition:opacity .25s ease;
+    z-index:50;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'gym-app-state';
+const uid = () => Math.random().toString(36).slice(2,10);
+
+function seedData(){
+  const mkEx = (name) => ({id:uid(), name, series:'', reps:'', rir:'', pctRM:'', notes:'', done:[]});
+  const mkBlock = (name, exNames) => ({id:uid(), name, exercises: exNames.map(mkEx)});
+  return {
+    days: [{
+      id: uid(),
+      name: 'Día 1',
+      blocks: [
+        mkBlock('Movilidad', ['Ejercicio 1','Ejercicio 2','Ejercicio 3','Ejercicio 4']),
+        mkBlock('Activación', ['Ejercicio 1','Ejercicio 2','Ejercicio 3','Ejercicio 4']),
+        mkBlock('Isométrico Tren Inferior', ['Ejercicio 1','Ejercicio 2']),
+        mkBlock('Tren Superior', ['Ejercicio 1','Ejercicio 2','Ejercicio 3','Ejercicio 4']),
+      ]
+    }],
+    activeDayId: null,
+    suggestedDayId: null,
+    lastSessionAt: null,
+    editMode: false
+  };
+}
+
+let state = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    state = raw ? JSON.parse(raw) : seedData();
+  }catch(e){
+    console.error('No se pudo cargar, usando plan de ejemplo', e);
+    state = seedData();
+  }
+  if(!state.activeDayId && state.days.length) state.activeDayId = state.days[0].id;
+  if(!state.suggestedDayId && state.days.length) state.suggestedDayId = state.days[0].id;
+  render();
+}
+
+function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.error('No se pudo guardar', e);
+    toast('⚠ No se pudo guardar');
+  }
+}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `plan-gimnasio-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Copia de seguridad descargada');
+}
+
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      if(!parsed.days) throw new Error('formato inválido');
+      state = parsed;
+      if(!state.activeDayId && state.days.length) state.activeDayId = state.days[0].id;
+      save(); render();
+      toast('Plan importado');
+    }catch(e){
+      toast('⚠ Archivo no válido');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function copyCode(){
+  const text = JSON.stringify(state);
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('Código copiado');
+  }catch(e){
+    const ta = document.getElementById('pasteArea');
+    ta.value = text;
+    ta.select();
+    try{ document.execCommand('copy'); toast('Código copiado'); }
+    catch(_){ toast('Selecciona y copia el texto manualmente'); }
+  }
+}
+
+function loadPastedCode(){
+  const ta = document.getElementById('pasteArea');
+  const text = ta.value.trim();
+  if(!text){ toast('⚠ Pega antes un código'); return; }
+  try{
+    const parsed = JSON.parse(text);
+    if(!parsed.days) throw new Error('formato inválido');
+    state = parsed;
+    if(!state.activeDayId && state.days.length) state.activeDayId = state.days[0].id;
+    save(); render();
+    toast('Plan cargado');
+  }catch(e){
+    toast('⚠ Código no válido');
+  }
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+function getActiveDay(){
+  return state.days.find(d => d.id === state.activeDayId);
+}
+
+function icon(name){
+  const icons = {
+    pencil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+    check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
+    x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>'
+  };
+  return icons[name] || '';
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const day = getActiveDay();
+  const edit = state.editMode;
+
+  let html = `
+    <header class="top">
+      <div class="brand">PLAN<small>· GIMNASIO</small></div>
+      <button class="icon-btn ${edit?'active':''}" id="editToggle" title="Editar plan">${icon('pencil')}</button>
+    </header>
+  `;
+
+  html += `<div class="day-tabs" id="dayTabs">`;
+  state.days.forEach(d => {
+    const isSuggested = d.id === state.suggestedDayId && d.id !== state.activeDayId;
+    html += `<button class="day-tab ${d.id===state.activeDayId?'active':''}" data-day="${d.id}">${escapeHtml(d.name)}${isSuggested?'<span class="dot"></span>':''}</button>`;
+  });
+  if(edit) html += `<button class="day-tab add" id="addDay">+</button>`;
+  html += `</div>`;
+
+  if(day && day.id === state.suggestedDayId && state.lastSessionAt){
+    html += `<div class="suggest-line"><b>SIGUIENTE</b> sugerido según tu última sesión</div>`;
+  }
+
+  if(!day){
+    html += `<div class="empty">
+      <h2>Sin días todavía</h2>
+      <p>Crea tu primer día de entrenamiento para empezar a montar el plan.</p>
+      <button class="btn-primary" id="firstDay">Crear día 1</button>
+    </div>`;
+    app.innerHTML = html;
+    document.getElementById('firstDay')?.addEventListener('click', addDay);
+    document.getElementById('editToggle').addEventListener('click', toggleEdit);
+    return;
+  }
+
+  if(edit){
+    html += `<div class="day-name-row">
+      <input class="day-name-input" id="dayNameInput" value="${escapeAttr(day.name)}">
+    </div>`;
+  }
+
+  day.blocks.forEach((block, bi) => {
+    html += `<div class="block" data-block="${block.id}">
+      <div class="block-head">
+        <span class="block-num">${String(bi+1).padStart(2,'0')}</span>
+        ${edit
+          ? `<input class="block-title-input" data-block-name="${block.id}" value="${escapeAttr(block.name)}">`
+          : `<span class="block-title">${escapeHtml(block.name)}</span>`}
+        ${edit ? `<button class="block-del" data-del-block="${block.id}">${icon('trash')}</button>` : ''}
+      </div>
+      <div class="exercises">`;
+
+    block.exercises.forEach(ex => {
+      if(edit){
+        html += `<div class="exercise" data-ex="${ex.id}">
+          <div class="ex-name-row">
+            <input class="ex-name-input" data-field="name" data-ex="${ex.id}" value="${escapeAttr(ex.name)}" placeholder="Nombre del ejercicio">
+            <button class="ex-del" data-del-ex="${ex.id}" data-block="${block.id}">${icon('x')}</button>
+          </div>
+          <div class="ex-edit-fields">
+            <div class="field"><label>Series</label><input data-field="series" data-ex="${ex.id}" value="${escapeAttr(ex.series)}" inputmode="numeric"></div>
+            <div class="field"><label>Reps</label><input data-field="reps" data-ex="${ex.id}" value="${escapeAttr(ex.reps)}" inputmode="numeric"></div>
+            <div class="field"><label>RIR</label><input data-field="rir" data-ex="${ex.id}" value="${escapeAttr(ex.rir)}" inputmode="numeric"></div>
+            <div class="field"><label>% RM</label><input data-field="pctRM" data-ex="${ex.id}" value="${escapeAttr(ex.pctRM)}" inputmode="numeric"></div>
+            <div class="field notes"><label>Notas</label><input data-field="notes" data-ex="${ex.id}" value="${escapeAttr(ex.notes)}" placeholder="Técnica, tempo..."></div>
+          </div>
+        </div>`;
+      }else{
+        const setsCount = parseInt(ex.series) || 0;
+        const done = ex.done || [];
+        html += `<div class="exercise">
+          <div class="ex-name-row"><span class="ex-name">${escapeHtml(ex.name)||'Ejercicio sin nombre'}</span></div>
+          <div class="ex-specs">
+            <span class="spec">SERIES × REPS <b>${escapeHtml(ex.series||'–')}×${escapeHtml(ex.reps||'–')}</b></span>
+            <span class="spec rir">RIR <b>${escapeHtml(ex.rir||'–')}</b></span>
+            <span class="spec pct">%RM <b>${escapeHtml(ex.pctRM||'–')}</b></span>
+          </div>
+          ${ex.notes ? `<div class="spec" style="margin-bottom:9px;">${escapeHtml(ex.notes)}</div>` : ''}
+          ${setsCount>0 ? `<div class="plates">` + Array.from({length:setsCount}).map((_,i)=>
+            `<button class="plate ${done[i]?'done':''}" data-toggle-set="${ex.id}" data-set-idx="${i}"></button>`
+          ).join('') + `</div>` : ''}
+        </div>`;
+      }
+    });
+
+    if(edit){
+      html += `<button class="add-ex-btn" data-add-ex="${block.id}">+ Añadir ejercicio</button>`;
+    }
+    html += `</div></div>`;
+  });
+
+  if(edit){
+    html += `<button class="add-block-btn" id="addBlock">+ Añadir bloque</button>`;
+    html += `<div class="sync-box">
+      <div class="sync-label">Sincronizar entre dispositivos</div>
+      <p class="sync-hint">Copia el código en un dispositivo y pégalo en el otro (ej. envíatelo por WhatsApp o Notas).</p>
+      <button class="btn-secondary" id="showCode">Copiar código de mi plan</button>
+      <textarea class="sync-area" id="pasteArea" placeholder="Pega aquí el código para cargarlo en este dispositivo..."></textarea>
+      <button class="btn-secondary" id="loadCode">Cargar código pegado</button>
+      <div class="sync-divider">o, si lo prefieres, como archivo:</div>
+      <div class="footer-actions">
+        <button class="btn-secondary" id="exportBtn">Exportar archivo</button>
+        <button class="btn-secondary" id="importBtn">Importar archivo</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+    </div>`;
+    html += `<div class="day-del-row"><button class="link-del" id="delDay">Eliminar este día</button></div>`;
+  } else {
+    html += `<div class="footer-actions">
+      <button class="btn-secondary" id="resetSession">Reiniciar series</button>
+      <button class="btn-secondary" id="completeSession">Sesión completada</button>
+    </div>`;
+  }
+
+  app.innerHTML = html;
+  attachHandlers();
+}
+
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(str){ return escapeHtml(str); }
+
+function attachHandlers(){
+  document.getElementById('editToggle')?.addEventListener('click', toggleEdit);
+
+  document.querySelectorAll('.day-tab[data-day]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.activeDayId = btn.dataset.day;
+      save(); render();
+    });
+  });
+  document.getElementById('addDay')?.addEventListener('click', addDay);
+  document.getElementById('dayNameInput')?.addEventListener('input', (e)=>{
+    getActiveDay().name = e.target.value;
+    save();
+    document.querySelector(`.day-tab[data-day="${state.activeDayId}"]`).firstChild.textContent = e.target.value;
+  });
+  document.getElementById('delDay')?.addEventListener('click', ()=>{
+    if(!confirm('¿Eliminar este día y todo su contenido?')) return;
+    const idx = state.days.findIndex(d=>d.id===state.activeDayId);
+    state.days.splice(idx,1);
+    state.activeDayId = state.days[0]?.id || null;
+    save(); render();
+  });
+
+  document.getElementById('addBlock')?.addEventListener('click', ()=>{
+    getActiveDay().blocks.push({id:uid(), name:'Nuevo bloque', exercises:[]});
+    save(); render();
+  });
+  document.querySelectorAll('[data-del-block]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const day = getActiveDay();
+      day.blocks = day.blocks.filter(b=>b.id!==btn.dataset.delBlock);
+      save(); render();
+    });
+  });
+  document.querySelectorAll('[data-block-name]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const block = getActiveDay().blocks.find(b=>b.id===inp.dataset.blockName);
+      block.name = inp.value;
+      save();
+    });
+  });
+
+  document.querySelectorAll('[data-add-ex]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const block = getActiveDay().blocks.find(b=>b.id===btn.dataset.addEx);
+      block.exercises.push({id:uid(), name:'', series:'', reps:'', rir:'', pctRM:'', notes:'', done:[]});
+      save(); render();
+    });
+  });
+  document.querySelectorAll('[data-del-ex]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const block = getActiveDay().blocks.find(b=>b.id===btn.dataset.block);
+      block.exercises = block.exercises.filter(e=>e.id!==btn.dataset.delEx);
+      save(); render();
+    });
+  });
+  document.querySelectorAll('[data-field]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const day = getActiveDay();
+      for(const block of day.blocks){
+        const ex = block.exercises.find(e=>e.id===inp.dataset.ex);
+        if(ex){
+          ex[inp.dataset.field] = inp.value;
+          if(inp.dataset.field==='series'){
+            const n = parseInt(inp.value)||0;
+            ex.done = Array.from({length:n}, (_,i)=> ex.done?.[i] || false);
+          }
+          break;
+        }
+      }
+      save();
+    });
+  });
+
+  document.querySelectorAll('[data-toggle-set]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const day = getActiveDay();
+      for(const block of day.blocks){
+        const ex = block.exercises.find(e=>e.id===btn.dataset.toggleSet);
+        if(ex){
+          const i = parseInt(btn.dataset.setIdx);
+          ex.done = ex.done || [];
+          ex.done[i] = !ex.done[i];
+          break;
+        }
+      }
+      save();
+      btn.classList.toggle('done');
+    });
+  });
+
+  document.getElementById('exportBtn')?.addEventListener('click', exportData);
+  document.getElementById('importBtn')?.addEventListener('click', ()=> document.getElementById('importFile').click());
+  document.getElementById('importFile')?.addEventListener('change', (e)=>{
+    if(e.target.files[0]) importData(e.target.files[0]);
+  });
+  document.getElementById('showCode')?.addEventListener('click', copyCode);
+  document.getElementById('loadCode')?.addEventListener('click', loadPastedCode);
+
+  document.getElementById('resetSession')?.addEventListener('click', ()=>{
+    const day = getActiveDay();
+    day.blocks.forEach(b => b.exercises.forEach(e => e.done = []));
+    save(); render();
+    toast('Series reiniciadas');
+  });
+  document.getElementById('completeSession')?.addEventListener('click', ()=>{
+    const idx = state.days.findIndex(d=>d.id===state.activeDayId);
+    const next = state.days[(idx+1) % state.days.length];
+    state.suggestedDayId = next?.id || state.activeDayId;
+    state.lastSessionAt = Date.now();
+    save(); render();
+    toast('¡Sesión registrada!');
+  });
+}
+
+function addDay(){
+  const d = {id:uid(), name:`Día ${state.days.length+1}`, blocks:[]};
+  state.days.push(d);
+  state.activeDayId = d.id;
+  save(); render();
+}
+
+function toggleEdit(){
+  state.editMode = !state.editMode;
+  render();
+}
+
+load();
+</script>
+</body>
+</html>
