@@ -258,6 +258,7 @@ function load(){
   }
   if(!state.activeDayId && state.days.length) state.activeDayId = state.days[0].id;
   if(!state.suggestedDayId && state.days.length) state.suggestedDayId = state.days[0].id;
+  state.editMode = false;
   render();
 }
 
@@ -289,6 +290,7 @@ function importData(file){
       if(!parsed.days) throw new Error('formato inválido');
       state = parsed;
       if(!state.activeDayId && state.days.length) state.activeDayId = state.days[0].id;
+      state.editMode = false;
       save(); render();
       toast('Plan importado');
     }catch(e){
@@ -321,6 +323,7 @@ function loadPastedCode(){
     if(!parsed.days) throw new Error('formato inválido');
     state = parsed;
     if(!state.activeDayId && state.days.length) state.activeDayId = state.days[0].id;
+    state.editMode = false;
     save(); render();
     toast('Plan cargado');
   }catch(e){
