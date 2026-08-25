@@ -207,6 +207,7 @@
   }
   .add-ex-btn:hover, .add-block-btn:hover{color:var(--turf-bright); border-color:var(--turf);}
   .add-block-btn{margin-bottom:16px; padding:12px;}
+  .add-block-btn.paste{border-style:solid; color:var(--turf-bright); border-color:var(--turf);}
 
   .footer-actions{display:flex; gap:10px; margin-top:6px;}
   .sync-box{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:16px;}
@@ -272,6 +273,7 @@ function seedData(){
 }
 
 let state = null;
+let clipboardBlock = null;
 
 function load(){
   try{
@@ -373,7 +375,8 @@ function icon(name){
     pencil:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
     check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
     trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
-    x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>'
+    x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>',
+    copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
   };
   return icons[name] || '';
 }
@@ -430,6 +433,7 @@ function render(){
         ${edit
           ? `<input class="block-title-input" data-block-name="${block.id}" value="${escapeAttr(block.name)}">`
           : `<span class="block-title">${escapeHtml(block.name)}</span>`}
+        ${edit ? `<button class="block-del" data-copy-block="${block.id}" title="Copiar bloque">${icon('copy')}</button>` : ''}
         ${edit ? `<button class="block-del" data-del-block="${block.id}">${icon('trash')}</button>` : ''}
       </div>
       ${edit
@@ -484,6 +488,9 @@ function render(){
 
   if(edit){
     html += `<button class="add-block-btn" id="addBlock">+ Añadir bloque</button>`;
+    if(clipboardBlock){
+      html += `<button class="add-block-btn paste" id="pasteBlock">📋 Pegar bloque copiado "${escapeHtml(clipboardBlock.name)}"</button>`;
+    }
     html += `<div class="sync-box">
       <div class="sync-label">Sincronizar entre dispositivos</div>
       <p class="sync-hint">Copia el código en un dispositivo y pégalo en el otro (ej. envíatelo por WhatsApp o Notas).</p>
@@ -557,6 +564,28 @@ function attachHandlers(){
   document.getElementById('addBlock')?.addEventListener('click', ()=>{
     getActiveDay().blocks.push({id:uid(), name:'Nuevo bloque', notes:'', exercises:[]});
     save(); render();
+  });
+  document.querySelectorAll('[data-copy-block]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const block = getActiveDay().blocks.find(b=>b.id===btn.dataset.copyBlock);
+      if(block){
+        clipboardBlock = JSON.parse(JSON.stringify(block));
+        toast(`Bloque "${block.name}" copiado`);
+        render();
+      }
+    });
+  });
+  document.getElementById('pasteBlock')?.addEventListener('click', ()=>{
+    if(!clipboardBlock) return;
+    const clone = {
+      id: uid(),
+      name: clipboardBlock.name,
+      notes: clipboardBlock.notes || '',
+      exercises: clipboardBlock.exercises.map(e => ({...e, id:uid(), done:[]}))
+    };
+    getActiveDay().blocks.push(clone);
+    save(); render();
+    toast('Bloque pegado');
   });
   document.querySelectorAll('[data-del-block]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
