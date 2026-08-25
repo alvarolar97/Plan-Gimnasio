@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Plan · Gimnasio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,6 +21,7 @@
     --turf:#5C9A54;
     --turf-bright:#8FD17F;
     --amber:#DFA34C;
+    --steel:#6FA3C9;
     --brick:#C1594A;
     --radius:14px;
   }
@@ -78,6 +82,13 @@
     width:38px; padding:0; display:flex; align-items:center; justify-content:center; font-size:18px;
   }
 
+  .drag-hint{
+    font-size:11px; color:var(--text-dim); margin:-10px 0 14px 2px; line-height:1.4;
+  }
+  .day-tab.dragging{
+    opacity:.55; transform:scale(1.05); box-shadow:0 4px 14px rgba(0,0,0,.4);
+    cursor:grabbing; z-index:5;
+  }
   .suggest-line{
     font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim);
     margin:-8px 0 16px 2px; letter-spacing:.02em;
@@ -133,6 +144,16 @@
   .block-del:hover{color:var(--brick);}
   .block-del svg{width:15px; height:15px;}
 
+  .block-notes{
+    font-size:12.5px; color:var(--text-dim); line-height:1.4; font-style:italic;
+    padding:10px 14px 0;
+  }
+  .block-notes-edit{padding:10px 14px 0;}
+  .block-notes-input{
+    width:100%; min-height:44px; resize:vertical;
+    font-family:'Inter',sans-serif; font-size:12.5px; color:var(--text);
+    background:var(--surface-2); border:1px dashed var(--border); border-radius:8px; padding:7px 9px;
+  }
   .exercises{padding:4px 14px 10px;}
   .exercise{padding:11px 0; border-bottom:1px solid var(--border);}
   .exercise:last-child{border-bottom:none;}
@@ -151,9 +172,11 @@
   .spec{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--text-dim);}
   .spec b{color:var(--text); font-weight:700;}
   .spec.rir b{color:var(--amber);}
+  .spec.kg b{color:var(--steel);}
   .spec.pct b{color:var(--turf-bright);}
 
   .ex-edit-fields{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:9px;}
+  .ex-edit-fields.three{grid-template-columns:1fr 1fr 1fr; gap:6px;}
   .field{display:flex; flex-direction:column; gap:3px;}
   .field label{font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em;}
   .field input{
@@ -204,8 +227,10 @@
   .btn-secondary.warn:hover{border-color:var(--brick); color:var(--brick);}
 
   .day-del-row{text-align:center; margin-top:18px;}
+  .day-del-sep{color:var(--border); margin:0 10px; font-size:12.5px;}
   .link-del{background:none; border:none; color:var(--text-dim); font-size:12.5px; cursor:pointer; text-decoration:underline; text-underline-offset:3px;}
-  .link-del:hover{color:var(--brick);}
+  .link-del:hover{color:var(--turf-bright);}
+  .link-del.warn:hover{color:var(--brick);}
 
   .toast{
     position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
@@ -226,8 +251,8 @@ const STORAGE_KEY = 'gym-app-state';
 const uid = () => Math.random().toString(36).slice(2,10);
 
 function seedData(){
-  const mkEx = (name) => ({id:uid(), name, series:'', reps:'', rir:'', pctRM:'', notes:'', done:[]});
-  const mkBlock = (name, exNames) => ({id:uid(), name, exercises: exNames.map(mkEx)});
+  const mkEx = (name) => ({id:uid(), name, series:'', reps:'', rir:'', kg:'', pctRM:'', notes:'', done:[]});
+  const mkBlock = (name, exNames) => ({id:uid(), name, notes:'', exercises: exNames.map(mkEx)});
   return {
     days: [{
       id: uid(),
@@ -372,6 +397,9 @@ function render(){
   });
   if(edit) html += `<button class="day-tab add" id="addDay">+</button>`;
   html += `</div>`;
+  if(edit && state.days.length > 1){
+    html += `<div class="drag-hint">Mantén pulsada una pestaña y arrastra para reordenar los días</div>`;
+  }
 
   if(day && day.id === state.suggestedDayId && state.lastSessionAt){
     html += `<div class="suggest-line"><b>SIGUIENTE</b> sugerido según tu última sesión</div>`;
@@ -404,6 +432,9 @@ function render(){
           : `<span class="block-title">${escapeHtml(block.name)}</span>`}
         ${edit ? `<button class="block-del" data-del-block="${block.id}">${icon('trash')}</button>` : ''}
       </div>
+      ${edit
+        ? `<div class="block-notes-edit"><textarea class="block-notes-input" data-block-notes="${block.id}" placeholder="Descripción general del bloque (opcional)...">${escapeHtml(block.notes)}</textarea></div>`
+        : (block.notes ? `<div class="block-notes">${escapeHtml(block.notes)}</div>` : '')}
       <div class="exercises">`;
 
     block.exercises.forEach(ex => {
@@ -416,8 +447,13 @@ function render(){
           <div class="ex-edit-fields">
             <div class="field"><label>Series</label><input data-field="series" data-ex="${ex.id}" value="${escapeAttr(ex.series)}" inputmode="numeric"></div>
             <div class="field"><label>Reps</label><input data-field="reps" data-ex="${ex.id}" value="${escapeAttr(ex.reps)}" inputmode="numeric"></div>
+          </div>
+          <div class="ex-edit-fields three">
             <div class="field"><label>RIR</label><input data-field="rir" data-ex="${ex.id}" value="${escapeAttr(ex.rir)}" inputmode="numeric"></div>
+            <div class="field"><label>KG</label><input data-field="kg" data-ex="${ex.id}" value="${escapeAttr(ex.kg)}" inputmode="decimal"></div>
             <div class="field"><label>% RM</label><input data-field="pctRM" data-ex="${ex.id}" value="${escapeAttr(ex.pctRM)}" inputmode="numeric"></div>
+          </div>
+          <div class="ex-edit-fields">
             <div class="field notes"><label>Notas</label><input data-field="notes" data-ex="${ex.id}" value="${escapeAttr(ex.notes)}" placeholder="Técnica, tempo..."></div>
           </div>
         </div>`;
@@ -429,6 +465,7 @@ function render(){
           <div class="ex-specs">
             <span class="spec">SERIES × REPS <b>${escapeHtml(ex.series||'–')}×${escapeHtml(ex.reps||'–')}</b></span>
             <span class="spec rir">RIR <b>${escapeHtml(ex.rir||'–')}</b></span>
+            <span class="spec kg">KG <b>${escapeHtml(ex.kg||'–')}</b></span>
             <span class="spec pct">%RM <b>${escapeHtml(ex.pctRM||'–')}</b></span>
           </div>
           ${ex.notes ? `<div class="spec" style="margin-bottom:9px;">${escapeHtml(ex.notes)}</div>` : ''}
@@ -460,7 +497,11 @@ function render(){
         <input type="file" id="importFile" accept="application/json" style="display:none">
       </div>
     </div>`;
-    html += `<div class="day-del-row"><button class="link-del" id="delDay">Eliminar este día</button></div>`;
+    html += `<div class="day-del-row">
+      <button class="link-del" id="dupDay">Duplicar este día</button>
+      <span class="day-del-sep">·</span>
+      <button class="link-del warn" id="delDay">Eliminar este día</button>
+    </div>`;
   } else {
     html += `<div class="footer-actions">
       <button class="btn-secondary" id="resetSession">Reiniciar series</button>
@@ -480,12 +521,7 @@ function escapeAttr(str){ return escapeHtml(str); }
 function attachHandlers(){
   document.getElementById('editToggle')?.addEventListener('click', toggleEdit);
 
-  document.querySelectorAll('.day-tab[data-day]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      state.activeDayId = btn.dataset.day;
-      save(); render();
-    });
-  });
+  attachDayTabHandlers();
   document.getElementById('addDay')?.addEventListener('click', addDay);
   document.getElementById('dayNameInput')?.addEventListener('input', (e)=>{
     getActiveDay().name = e.target.value;
@@ -499,9 +535,27 @@ function attachHandlers(){
     state.activeDayId = state.days[0]?.id || null;
     save(); render();
   });
+  document.getElementById('dupDay')?.addEventListener('click', ()=>{
+    const day = getActiveDay();
+    const idx = state.days.findIndex(d=>d.id===day.id);
+    const clone = {
+      id: uid(),
+      name: `${day.name} (copia)`,
+      blocks: day.blocks.map(b => ({
+        id: uid(),
+        name: b.name,
+        notes: b.notes || '',
+        exercises: b.exercises.map(e => ({...e, id:uid(), done:[]}))
+      }))
+    };
+    state.days.splice(idx+1, 0, clone);
+    state.activeDayId = clone.id;
+    save(); render();
+    toast('Día duplicado');
+  });
 
   document.getElementById('addBlock')?.addEventListener('click', ()=>{
-    getActiveDay().blocks.push({id:uid(), name:'Nuevo bloque', exercises:[]});
+    getActiveDay().blocks.push({id:uid(), name:'Nuevo bloque', notes:'', exercises:[]});
     save(); render();
   });
   document.querySelectorAll('[data-del-block]').forEach(btn=>{
@@ -518,11 +572,18 @@ function attachHandlers(){
       save();
     });
   });
+  document.querySelectorAll('[data-block-notes]').forEach(ta=>{
+    ta.addEventListener('input', ()=>{
+      const block = getActiveDay().blocks.find(b=>b.id===ta.dataset.blockNotes);
+      block.notes = ta.value;
+      save();
+    });
+  });
 
   document.querySelectorAll('[data-add-ex]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const block = getActiveDay().blocks.find(b=>b.id===btn.dataset.addEx);
-      block.exercises.push({id:uid(), name:'', series:'', reps:'', rir:'', pctRM:'', notes:'', done:[]});
+      block.exercises.push({id:uid(), name:'', series:'', reps:'', rir:'', kg:'', pctRM:'', notes:'', done:[]});
       save(); render();
     });
   });
@@ -590,6 +651,66 @@ function attachHandlers(){
     save(); render();
     toast('¡Sesión registrada!');
   });
+}
+
+let suppressTabClick = false;
+
+function attachDayTabHandlers(){
+  document.querySelectorAll('.day-tab[data-day]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(suppressTabClick){ suppressTabClick = false; return; }
+      state.activeDayId = btn.dataset.day;
+      save(); render();
+    });
+    if(state.editMode){
+      btn.addEventListener('pointerdown', (e)=> startTabDrag(e, btn));
+    }
+  });
+}
+
+function startTabDrag(e, el){
+  const dayId = el.dataset.day;
+  const startX = e.clientX, startY = e.clientY;
+  let dragging = false;
+
+  const holdTimer = setTimeout(()=>{
+    dragging = true;
+    suppressTabClick = true;
+    document.querySelector(`.day-tab[data-day="${dayId}"]`)?.classList.add('dragging');
+  }, 300);
+
+  function onMove(ev){
+    if(!dragging){
+      if(Math.abs(ev.clientX-startX) > 10 || Math.abs(ev.clientY-startY) > 10){
+        clearTimeout(holdTimer);
+        cleanup();
+      }
+      return;
+    }
+    ev.preventDefault();
+    const under = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.day-tab[data-day]');
+    if(under && under.dataset.day !== dayId){
+      const fromIdx = state.days.findIndex(d=>d.id===dayId);
+      const toIdx = state.days.findIndex(d=>d.id===under.dataset.day);
+      if(fromIdx>-1 && toIdx>-1){
+        const [moved] = state.days.splice(fromIdx,1);
+        state.days.splice(toIdx,0,moved);
+        save(); render();
+        document.querySelector(`.day-tab[data-day="${dayId}"]`)?.classList.add('dragging');
+      }
+    }
+  }
+  function onUp(){
+    clearTimeout(holdTimer);
+    cleanup();
+  }
+  function cleanup(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.querySelector(`.day-tab[data-day="${dayId}"]`)?.classList.remove('dragging');
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
 }
 
 function addDay(){
